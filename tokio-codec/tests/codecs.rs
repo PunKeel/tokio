@@ -1,7 +1,8 @@
 #![deny(warnings, rust_2018_idioms)]
 
 use bytes::{BufMut, Bytes, BytesMut};
-use tokio_codec::{BytesCodec, Decoder, Encoder, LinesCodec};
+
+use tokio_codec::{BytesCodec, Decoder, Encoder, LengthFieldBasedCodec, LinesCodec};
 
 #[test]
 fn bytes_decoder() {
@@ -37,6 +38,31 @@ fn bytes_encoder() {
     codec
         .encode(Bytes::from_static(&[0; INITIAL_CAPACITY + 1]), &mut buf)
         .unwrap();
+}
+
+
+#[test]
+fn length_based_decoder() {
+    let mut codec = LengthFieldBasedCodec::new(12);
+    let buf = &mut BytesMut::new();
+    buf.reserve(200);
+
+    buf.put("\x0Chello, world");
+    assert_eq!("hello, world", codec.decode(buf).unwrap().unwrap());
+    assert_eq!(None, codec.decode(buf).unwrap());
+    assert_eq!(None, codec.decode(buf).unwrap());
+
+    buf.put("\x0Chello"); // Unfinished line should not be output
+    assert_eq!(None, codec.decode(buf).unwrap());
+    assert_eq!(None, codec.decode(buf).unwrap());
+
+    buf.put(", world"); // complete the line, expect it to be returned
+    assert_eq!("hello, world", codec.decode(buf).unwrap().unwrap());
+    assert_eq!(None, codec.decode(buf).unwrap());
+    assert_eq!(None, codec.decode(buf).unwrap());
+
+    buf.put("\x0Dhello, world!"); // too long (length: 0x0D = 13)
+    assert!(codec.decode(buf).is_err());
 }
 
 #[test]

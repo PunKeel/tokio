@@ -19,6 +19,7 @@
 mod macros;
 
 mod bytes_codec;
+mod length_field_based_codec;
 mod decoder;
 mod encoder;
 mod framed;
@@ -27,6 +28,7 @@ mod framed_write;
 mod lines_codec;
 
 pub use crate::bytes_codec::BytesCodec;
+pub use crate::length_field_based_codec::LengthFieldBasedCodec;
 pub use crate::decoder::Decoder;
 pub use crate::encoder::Encoder;
 pub use crate::framed::{Framed, FramedParts};
